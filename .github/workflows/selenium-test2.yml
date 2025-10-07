@@ -1,0 +1,59 @@
+name: Node.js CI con Selenium
+
+# Define cuándo se ejecutará el flujo de trabajo.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Define un trabajo llamado 'build' que se ejecutará en un entorno 'ubuntu-latest'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Paso 1: Extraer el código del repositorio
+    - name: Checkout del código
+      uses: actions/checkout@v4
+
+    # Paso 2: Configurar Node.js en la versión 20
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # Paso 3: Instalar las dependencias del proyecto
+    - name: Instalar dependencias
+      run: npm install
+
+    # Paso 4: Instalar Google Chrome y dependencias adicionales
+    - name: Instalar Google Chrome y Xvfb para entorno sin interfaz
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable xvfb
+
+    # Paso 5: Ejecutar las pruebas de regresión en un entorno virtual sin interfaz
+    - name: Ejecutar pruebas de regresión con Selenium
+      run: xvfb-run --auto-servernum npm test
+
+    # Paso 6: Enviar correo electrónico con el resultado de las pruebas
+    - name: Enviar correo electrónico con resultados
+      if: always() # Ejecutar siempre, incluso si los pasos anteriores fallan
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        secure: true
+        username: ${{secrets.MAIL_USERNAME}}
+        password: ${{secrets.MAIL_PASSWORD}}
+        subject: "Resultado de pruebas de regresión en ${{github.repository}}"
+        to: ${{secrets.MAIL_TO}}
+        from: "Notificaciones de GitHub Actions"
+        html_body: |
+          <h1>Reporte de pruebas automatizadas</h1>
+          <p>El flujo de trabajo <b>${{github.workflow}}</b> en el repositorio <b>${{github.repository}}</b> ha finalizado con el estado: <b>${{job.status}}</b>.</p>
+          <p>Puedes ver el detalle de la ejecución <a href="${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}}">aquí</a>.</p>
+          <br>
+          <p>Saludos,</p>
+          <p>El equipo de automatización</p>
