@@ -37,23 +37,20 @@ jobs:
     - name: Ejecutar pruebas de regresión con Selenium
       run: xvfb-run --auto-servernum npm test
 
-    # Paso 6: Enviar correo electrónico con el resultado de las pruebas
+    # Paso 6: Enviar correo electrónico con el resultado de las pruebas usando SendGrid
     - name: Enviar correo electrónico con resultados
       if: always() # Ejecutar siempre, incluso si los pasos anteriores fallan
-      uses: dawidd6/action-send-mail@v3
+      uses: petewilcock/sendgrid-mail-action@v1
       with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        secure: true
-        username: ${{secrets.MAIL_USERNAME}}
-        password: ${{secrets.MAIL_PASSWORD}}
-        subject: "Resultado de pruebas de regresión en ${{github.repository}}"
-        to: ${{secrets.MAIL_TO}}
-        from: "Notificaciones de GitHub Actions"
-        html_body: |
+        apikey: ${{ secrets.SENDGRID_API_KEY }}
+        to: 'correo-destino@ejemplo.com'  # Reemplaza con la dirección de correo del destinatario
+        from: 'correo-verificado@ejemplo.com' # Reemplaza con la dirección de correo que verificaste en SendGrid
+        subject: "Resultado de pruebas en ${{github.repository}}"
+        content: |
           <h1>Reporte de pruebas automatizadas</h1>
           <p>El flujo de trabajo <b>${{github.workflow}}</b> en el repositorio <b>${{github.repository}}</b> ha finalizado con el estado: <b>${{job.status}}</b>.</p>
           <p>Puedes ver el detalle de la ejecución <a href="${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}}">aquí</a>.</p>
           <br>
           <p>Saludos,</p>
           <p>El equipo de automatización</p>
+
